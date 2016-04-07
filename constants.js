@@ -26,3 +26,5 @@ define("URLINSTANCEID", 'http://169.254.169.254/latest/meta-data/instance-id');
 define("DEFAULTNAMESPACE", 'NameSpaceAWSDefault');
 
 define("LEVELSWINSTON", ['error', 'warn', 'info', 'verbose', 'silly']);
+
+define("AUTO", "auto");

@@ -1,7 +1,7 @@
 # cloudwatch-winston-wrapper
 
 Simple Node module that allows put Metric Data of the Log Events in CloudWatch AWS through Winston's logger (this is possible by overloading the logger methods of Winston). 
-The Log Events from Winston's logger, put two metrics in the namespace indicated to the constructor:
+The Log Events from Winston's logger, put by default two metrics in the namespace indicated to the constructor:
  * instance (instance id from machine AWS), level, Metric Name (always is LogEvent)
  * level, Metric Name (always is LogEvent)
 
@@ -15,6 +15,12 @@ Optionally, you can specify the following fields:
   * region : region from AWS
   * levelCloudWatch : Constant from CloudWatchWinston (CloudWatchWinston.DEBUG, CloudWatchWinston.ERROR...) that specifies the level of CloudWatch's logger. By default is INFO.
   * levelCloudWinston : String ('error', 'warn', 'debug'...) that specifies the level of Winston's logger.
+  * dimensions : Array of JSON Array for adding extra dimensions in each metric data in CloudWatch. Each dimension has included the corresponding level. Each array of array contains JSON with the following fields:
+    ** Name : String that represents the name of the dimension
+	** Value : String that represents the value of the dimension
+	** Type : (Optionally) String that represents the type of the dimension to generate. 
+	   This can be the constant allowed AUTO (you can access to this constant through the module), and it represents that the Value must be generate internally. 
+	   At present, only the instance ID can be generate automatically, and for that, you must specify in the Value the class constant INSTANCE.  
   * (other parameters necessary  from instance AWS as private key (to see AWS's doc)).
 
 Methods extra to Winston's methods:
@@ -30,7 +36,15 @@ var CloudWatchWinstonWrapper = require('cloudwatch-winston-wrapper');
 
 // First param constructor: namespace from the metrics
 // Second param constructor: JSON with the configuration of CloudWatch AWS (region, keys...)
-var logger = new CloudWatchWinstonWrapper({namespace: "NameSpaceDevelopment", region: "eu-west-1", levelCloudWatch: CloudWatchWinstonWrapper.DEBUG, levelWinston: 'info'});
+// In this example, we put extra dimensions in each metric data. It will generate four dimensions for each point set in CloudWatch. That dimensions will be: 
+// * level, MetricName // By default
+// * level, instance, MetricName // By default
+// * level, instance, process // Extra
+// * level, PID // Extra
+
+var logger = new CloudWatchWinstonWrapper({namespace: "NameSpaceDevelopment", region: "eu-west-1", levelCloudWatch: CloudWatchWinstonWrapper.DEBUG, levelWinston: 'info', 
+dimensions: [[{Name: "instance", Value: CloudWatchWinstonWrapper.INSTANCE, Type: CloudWatchWinstonWrapper.AUTO}, {Name: "process", Value: "processName"}], [{Name: "PID", Value: "1024"}]] });
+
 logger.remove(logger.transports.Console);
 logger.add(logger.transports.File, { filename: __dirname + "/fileLogs.log", json: false });
 

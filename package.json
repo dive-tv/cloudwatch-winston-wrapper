@@ -1,6 +1,6 @@
 {
   "name": "cloudwatch-winston-wrapper",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Overload logger winston to add a new Transport CloudWatch AWS that it allows the use of Metric Data in CloudWatch",
   "main": "index.js",
   "author": "Natalia Angulo Herrera <nataliaangulo93@gmail.com>  @ Touchvie",

@@ -1,31 +1,16 @@
+/*	Author : Natalia Angulo Herrera
+	Date : 07/04/2016
+	Licence : MIT
+*/
+
 // Constructor
 function Logger(config){    
     // AWS-SDK
     if (config !== undefined) {
         this.cloudwatch = new AWS.CloudWatch(config);
         
-        // Param Metric Data for CloudWatch
-        this.paramsMetricData = {
-            MetricData: [ /* required */
-                {
-                    MetricName: constants.LOGEVENT, /* required */
-                    Timestamp: new Date().toISOString(),
-                    Unit: "Count",
-                    Value: 1.0
-                },
-                {
-                    MetricName: constants.LOGEVENT, /* required */
-                    Timestamp: new Date().toISOString(),
-                    Unit: "Count",
-                    Value: 1.0
-                }
-                
-            ],
-            Namespace: 'STRING_VALUE' /* required */
-        };
-        
         if (config.namespace !== undefined) {
-            this.paramsMetricData.Namespace = config.namespace;
+            this.namespace = config.namespace;
             
             this.levelPrio = config.levelCloudWatch || constants.INFOPRIO;
             
@@ -36,24 +21,86 @@ function Logger(config){
                 var res = request('GET', constants.URLINSTANCEID, {timeout : 3000});
                 this.instanceID = res.getBody();
             } catch (ex) {
-                winston.error("Error getting InstanceID.");
+                origError("Error getting InstanceID.");
                 this.instanceID = 'Generic-ID';
+            }
+            
+            this.dimensions = [];
+            
+            // Parse extra dimensions
+            if (config.dimensions !== undefined) {
+                // Parse the specified dimensions
+                for (var i = 0; i < config.dimensions.length; i++) {
+                    var dimension = [];
+                    for (var j = 0; j < config.dimensions[i].length; j++) {
+                        var elem = config.dimensions[i][j];
+                        if (elem !== undefined) {
+                            var name = elem.Name;
+                            var value = elem.Value;
+                            var type = elem.Type;
+                            
+                            if (name !== undefined && value != undefined) {
+                                if (type === undefined || type !== constants.AUTO)
+                                    dimension.push({ Name : name, Value : value});
+                                else {
+                                    switch (value) {
+                                        case constants.INSTANCE:
+                                            dimension.push({ Name : name, Value : this.instanceID.toString()});
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                }
+                            }
+                            
+                        }
+                    }
+                    if (dimension !== [])
+                        this.dimensions.push(dimension);
+                }
             }
             
             this.putMetricData = function (level) {
                 if (this.instanceID !== undefined) {
-                    var dimensions = [
-                        [{ Name : constants.LEVEL, Value : level}],
-                        [{ Name : constants.LEVEL, Value : level}, 
-                            { Name : constants.INSTANCE, Value : this.instanceID.toString()}]
+                    var JSONlevel = { Name : constants.LEVEL, Value : level};
+                    var dimensionsDefault = [
+                        [JSONlevel],
+                        [JSONlevel, { Name : constants.INSTANCE, Value : this.instanceID.toString()}]
                     ];
+                    
+                    // Param Metric Data for CloudWatch
+                    var paramsMetricData = {
+                        MetricData: [], /* required */
+                        Namespace: this.namespace /* required */
+                    };
 
-                    for (var i = 0; i < dimensions.length; i++) {
-                        this.paramsMetricData.MetricData[i].Dimensions = dimensions[i];
+                    for (var i = 0; i < dimensionsDefault.length; i++) {
+                        var dataDefault = {
+                            MetricName: constants.LOGEVENT, /* required */
+                            Timestamp: new Date().toISOString(),
+                            Dimensions: dimensionsDefault[i],
+                            Unit: "Count",
+                            Value: 1.0
+                        };
+                        paramsMetricData.MetricData.push(dataDefault);
                     }
-                    this.cloudwatch.putMetricData(this.paramsMetricData, function(err, data) {
+                    
+                    for (var i = 0; i < this.dimensions.length; i++) {
+                        var dimension = this.dimensions[i];
+                        dimension.unshift(JSONlevel); // Push first place the dimension level by default
+                        var data = {
+                            MetricName: constants.LOGEVENT, /* required */
+                            Timestamp: new Date().toISOString(),
+                            Dimensions: dimension,
+                            Unit: "Count",
+                            Value: 1.0
+                        };
+                        paramsMetricData.MetricData.push(data);
+                    }
+                    
+                    this.cloudwatch.putMetricData(paramsMetricData, function(err, data) {
                         if (err) {
-                            origError.call(this, err);
+                            origError.call(err);
                         }
                     });
                 } else
@@ -89,6 +136,9 @@ module.exports.ERROR = constants.ERRORPRIO;
 module.exports.WARN = constants.WARNPRIO;
 module.exports.INFO = constants.INFOPRIO;
 module.exports.DEBUG = constants.DEBUGPRIO;
+
+module.exports.INSTANCE = constants.INSTANCE;
+module.exports.AUTO = constants.AUTO;
 
 // Overloaded methods
 Logger.prototype.debug = function(msg) {
