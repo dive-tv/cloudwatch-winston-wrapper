@@ -87,11 +87,10 @@ function Logger(config){
                     
                     for (var i = 0; i < this.dimensions.length; i++) {
                         var dimension = this.dimensions[i];
-                        dimension.unshift(JSONlevel); // Push first place the dimension level by default
                         var data = {
                             MetricName: constants.LOGEVENT, /* required */
                             Timestamp: new Date().toISOString(),
-                            Dimensions: dimension,
+                            Dimensions: [JSONlevel].concat(dimension),
                             Unit: "Count",
                             Value: 1.0
                         };
