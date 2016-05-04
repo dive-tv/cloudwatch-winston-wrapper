@@ -1,6 +1,6 @@
 /*	Author : Natalia Angulo Herrera
 	Date : 07/04/2016
-	Licence : MIT
+	License : MIT
 */
 
 // Constructor
@@ -21,7 +21,7 @@ function Logger(config){
                 var res = request('GET', constants.URLINSTANCEID, {timeout : 3000});
                 this.instanceID = res.getBody();
             } catch (ex) {
-                origError("Error getting InstanceID.");
+                origError(this, "Error getting InstanceID.");
                 this.instanceID = 'Generic-ID';
             }
             
@@ -100,16 +100,19 @@ function Logger(config){
                     
                     this.cloudwatch.putMetricData(paramsMetricData, function(err, data) {
                         if (err) {
-                            origError.call(err);
+                            origError.call(this, err);
                         }
                     });
-                } else
-                    throw new Error("Instance ID is undefined. It was imposible get instanceID");
+                } else {
+                    throw new Error("Instance ID is undefined. It was imposible to get instanceID");
+                }
             };
-        } else
+        } else {
             throw new Error("Namespace not specified");
-    } else
+        }
+    } else {
         throw new Error("Configuration not specified");
+    }
 }
 
 
