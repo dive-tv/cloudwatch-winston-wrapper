@@ -63,5 +63,5 @@ npm install cloudwatch-winston-wrapper
 Via git:
 
 ```bash
-git clone https://github.com/touchvie/node-cloudwatch-winston-wrapper.git
+git clone https://github.com/touchvie/cloudwatch-winston-wrapper.git
 ```
